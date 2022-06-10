@@ -306,6 +306,11 @@ fn remove_char_from_input(app: &mut State, i: usize) -> char {
     c
 }
 
+#[inline(always)]
+fn get_char_from_input(app: &mut State, i: usize) -> char {
+    app.input.chars().nth(i - 1).unwrap()
+}
+
 #[allow(clippy::too_many_lines)]
 async fn key_handler(
     input: TermEvent,
@@ -363,7 +368,57 @@ async fn key_handler(
             app.cursor_index -= 1;
             query_results(app, search_mode, db).await.unwrap();
         }
-        TermEvent::Key(Key::Ctrl('w')) => {
+        
+        // upon pressing alt+A, move cursor to previous word
+        TermEvent::Key(Key::Alt('a')) => {
+            let mut stop_on_next_whitespace = false;
+            loop {
+                if app.cursor_index == 0 {
+                    break;
+                }
+                if app.input.chars().nth(app.cursor_index - 1) == Some(' ')
+                    && stop_on_next_whitespace
+                {
+                    break;
+                }
+                if !get_char_from_input(app, app.cursor_index).is_whitespace() {
+                    stop_on_next_whitespace = true;
+                }
+                app.cursor_index -= 1;
+            }
+            query_results(app, search_mode, db).await.unwrap();
+        }
+
+        // upon pressing alt+E, move cursor to next word
+        TermEvent::Key(Key::Alt('e')) => {
+            let mut stop_on_next_whitespace = false;
+            let count = app.input.chars().count();
+            loop {
+
+                if app.cursor_index == count {
+                    break;
+                }
+                if app.input.chars().nth(app.cursor_index) == Some(' ')
+                    && stop_on_next_whitespace
+                {
+                    break;
+                }
+                if app.cursor_index == 0 && count != 0 {
+                    app.cursor_index += 1;
+                }
+                if !get_char_from_input(app, app.cursor_index).is_whitespace() {
+                    stop_on_next_whitespace = true;
+                }
+                // the `if` prevents the edge-case subtract-with-overflow panic (due to the double increment) if there's only 1 character inputted
+                if count != 1 {
+                    app.cursor_index += 1;
+                }
+            }
+            query_results(app, search_mode, db).await.unwrap();
+        }
+
+        // The latter pattern matches pressing Alt and Backspace
+        TermEvent::Key(Key::Ctrl('w')) | TermEvent::Key(Key::Alt('\x7F'))=> {
             let mut stop_on_next_whitespace = false;
             loop {
                 if app.cursor_index == 0 {
@@ -381,6 +436,7 @@ async fn key_handler(
             }
             query_results(app, search_mode, db).await.unwrap();
         }
+
         TermEvent::Key(Key::Ctrl('u')) => {
             app.input = String::from("");
             app.cursor_index = 0;
