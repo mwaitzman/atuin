@@ -34,7 +34,7 @@ impl Settings {
             .set_default("host", "127.0.0.1")?
             .set_default("port", 8888)?
             .set_default("open_registration", false)?
-            .set_default("max_history_length", 8192)?
+            .set_default("max_history_length", 0)?// no max history length
             .add_source(
                 Environment::with_prefix("atuin")
                     .prefix_separator("_")
