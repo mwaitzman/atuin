@@ -44,13 +44,32 @@ _atuin_search(){
 	zle reset-prompt
 }
 
+_atuin_search_filterSession(){
+	emulate -L zsh
+	zle -I
+
+	# Switch to cursor mode, then back to application
+	echoti rmkx
+	# swap stderr and stdout, so that the tui stuff works
+	# TODO: not this
+	output=$(RUST_LOG=error atuin search -i -f session $BUFFER 3>&1 1>&2 2>&3)
+	echoti smkx
+
+	if [[ -n $output ]] ; then
+		LBUFFER=$output
+	fi
+
+	zle reset-prompt
+}
+
 add-zsh-hook preexec _atuin_preexec
 add-zsh-hook precmd _atuin_precmd
 
 zle -N _atuin_search_widget _atuin_search
+zle -N _atuin_search_widget_filterSession _atuin_search_filterSession
 
 if [[ -z $ATUIN_NOBIND ]]; then
-	bindkey '^r' _atuin_search_widget
+	bindkey '^r' _atuin_search_widget_filterSession
 
 	# depends on terminal mode
 	bindkey '^[[A' _atuin_search_widget

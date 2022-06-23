@@ -111,6 +111,7 @@ dependencies = [
  "base64",
  "chrono",
  "chrono-english",
+ "clap",
  "config",
  "directories",
  "eyre",

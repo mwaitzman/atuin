@@ -6,7 +6,7 @@ This program is free software: you can redistribute it and/or modify it under th
 This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
 
 You should have received a copy of the GNU Affero General Public License along with this program. If not, see <https://www.gnu.org/licenses/>
-*/														   */
+*/
 use std::{env, io::stdout, ops::Sub, time::Duration};
 
 use chrono::Utc;
@@ -75,6 +75,10 @@ pub struct Cmd {
     #[clap(long, short)]
     interactive: bool,
 
+    /// set filter mode (default to global)
+    #[clap(long, short, arg_enum)]
+    filter_mode: Option<FilterMode>,
+
     /// Use human-readable formatting for time
     #[clap(long)]
     human: bool,
@@ -92,27 +96,46 @@ impl Cmd {
             let item = select_history(
                 &self.query,
                 settings.search_mode,
-                settings.filter_mode,
+                self.filter_mode.unwrap_or(settings.filter_mode),
                 settings.style,
                 db,
             )
             .await?;
             eprintln!("{}", item);
         } else {
+            let mut settings = settings.clone();
             let list_mode = ListMode::from_flags(self.human, self.cmd_only);
-            run_non_interactive(
-                settings,
-                list_mode,
-                self.cwd,
-                self.exit,
-                self.exclude_exit,
-                self.exclude_cwd,
-                self.before,
-                self.after,
-                self.limit,
-                &self.query,
-                db,
-            )
+            if let Some(filter_mode) = self.filter_mode {
+                settings.filter_mode = filter_mode;
+                run_non_interactive(
+                    &settings,
+                    list_mode,
+                    self.cwd,
+                    self.exit,
+                    self.exclude_exit,
+                    self.exclude_cwd,
+                    self.before,
+                    self.after,
+                    self.limit,
+                    &self.query,
+                    db,
+                )
+            }
+            else {
+                run_non_interactive(
+                    &settings,
+                    list_mode,
+                    self.cwd,
+                    self.exit,
+                    self.exclude_exit,
+                    self.exclude_cwd,
+                    self.before,
+                    self.after,
+                    self.limit,
+                    &self.query,
+                    db,
+                )
+            }
             .await?;
         };
         Ok(())
@@ -388,7 +411,7 @@ fn key_handler(input: &TermEvent, app: &mut State) -> Option<String> {
                 }
                 app.cursor_index -= 1;
             }
-            query_results(app, search_mode, db).await.unwrap();
+            //query_results(app, search_mode, db).await.unwrap();
         }
 
         // upon pressing alt+E, move cursor to next word
@@ -416,7 +439,7 @@ fn key_handler(input: &TermEvent, app: &mut State) -> Option<String> {
                     app.cursor_index += 1;
                 }
             }
-            query_results(app, search_mode, db).await.unwrap();
+            //query_results(app, search_mode, db).await.unwrap();
         }
 
         // The latter pattern matches pressing Alt and Backspace
