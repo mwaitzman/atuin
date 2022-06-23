@@ -64,11 +64,11 @@ pub struct Cmd {
     before: Option<String>,
 
     /// Only include results after this date
-    #[clap(long)]
+    #[clap(long, short)]
     after: Option<String>,
 
     /// How many entries to return at most
-    #[clap(long)]
+    #[clap(long, short)]
     limit: Option<i64>,
 
     /// Open interactive search UI
@@ -78,6 +78,10 @@ pub struct Cmd {
     /// set filter mode (default to global)
     #[clap(long, short, arg_enum)]
     filter_mode: Option<FilterMode>,
+
+    /// set search mode (default to prefix)
+    #[clap(long, short, arg_enum)]
+    search_mode: Option<SearchMode>,
 
     /// Use human-readable formatting for time
     #[clap(long)]
@@ -95,7 +99,7 @@ impl Cmd {
         if self.interactive {
             let item = select_history(
                 &self.query,
-                settings.search_mode,
+                self.search_mode.unwrap_or(settings.search_mode),
                 self.filter_mode.unwrap_or(settings.filter_mode),
                 settings.style,
                 db,

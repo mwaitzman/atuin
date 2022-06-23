@@ -9,10 +9,11 @@ use eyre::{eyre, Context, Result};
 use fs_err::{create_dir_all, File};
 use parse_duration::parse;
 use serde::Deserialize;
+use clap::ArgEnum;
 
 pub const HISTORY_PAGE_SIZE: i64 = 100;
 
-#[derive(Clone, Debug, Deserialize, Copy)]
+#[derive(Clone, Debug, Deserialize, Copy, ArgEnum)]
 pub enum SearchMode {
     #[serde(rename = "prefix")]
     Prefix,
@@ -24,7 +25,7 @@ pub enum SearchMode {
     Fuzzy,
 }
 
-#[derive(Clone, Debug, Deserialize, Copy, PartialEq, clap::ArgEnum)]
+#[derive(Clone, Debug, Deserialize, Copy, PartialEq, ArgEnum)]
 pub enum FilterMode {
     #[serde(rename = "global")]
     Global,
