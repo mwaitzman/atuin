@@ -1,5 +1,6 @@
 #![warn(clippy::pedantic, clippy::nursery)]
 #![allow(clippy::use_self)] // not 100% reliable
+#![feature(pattern, let_chains)]
 
 use clap::{AppSettings, Parser};
 use eyre::Result;

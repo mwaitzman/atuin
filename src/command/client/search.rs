@@ -7,7 +7,7 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 
 You should have received a copy of the GNU Affero General Public License along with this program. If not, see <https://www.gnu.org/licenses/>
 */
-use std::{env, io::stdout, ops::Sub, time::Duration};
+use std::{env, io::stdout, ops::Sub, time::Duration, str::pattern::Pattern};
 
 use chrono::Utc;
 use clap::Parser;
@@ -318,11 +318,11 @@ fn insert_char_into_input(app: &mut State, i: usize, c: char) {
     app.input = result;
 }
 
-fn remove_char_from_input(app: &mut State, i: usize) -> char {
+fn remove_char_from_input(app: &mut State, i: usize) -> Option<char> {
     let mut result = String::from("");
     result.push_str(&get_input_prefix(app, i - 1));
     result.push_str(&get_input_suffix(app, i));
-    let c = app.input.chars().nth(i - 1).unwrap();
+    let c = app.input.chars().nth(i - 1);
     app.input = result;
     c
 }
@@ -443,12 +443,40 @@ fn key_handler(input: &TermEvent, app: &mut State) -> Option<String> {
                 {
                     break;
                 }
-                if !remove_char_from_input(app, app.cursor_index).is_whitespace() {
-                    stop_on_next_whitespace = true;
+                if let Some(c) = remove_char_from_input(app, app.cursor_index)
+					&& !c.is_whitespace() {
+                    	stop_on_next_whitespace = true;
                 }
                 app.cursor_index -= 1;
             }
         }
+
+
+		 //ABOUT: C-q => if the cursor is positioned at a delimiter, remove all consecutive delimiters leftwards. Otherwise, remove all consecutive *non-*delimiters leftwards
+		 //NOTE: I originally wanted this to be bound to C-DEL ( = Key::Ctrl('\x7F') = Ctrl+Backspace), but my terminal (wezterm) appears not to support that key sequence (as [Termion's docs warn](https://docs.rs/termion/1.5.6/termion/event/enum.Key.html#variant.Ctrl)), so it had to be rebound
+		 TermEvent::Key(Key::Ctrl('q')) => {
+			const DELIMITERS: &str = "/ \t\n\'\"(){}[].,:;";
+
+			if app.cursor_index != 0 {
+				app.cursor_index -= 1;
+				let should_invert = !remove_char_from_input(app, app.cursor_index)
+				.unwrap() //UNWRAP: I don't believe there is any way for this to fail when the cursor index ain't 0, which is already covered, so I'm `unwrap`ing instead of matching on, but I'm not 100% confident that it is impossible for it to fail so no `unwrap_unchecked`
+				.is_contained_in(DELIMITERS);
+
+				loop {
+					if app.cursor_index == 0 { break; }
+					if let Some(c) = remove_char_from_input(app, app.cursor_index)
+						&& c.is_contained_in(DELIMITERS) == should_invert {
+							app.cursor_index -= 1;
+							break;
+					}
+					app.cursor_index -= 1;
+				}
+			}
+        }
+
+
+
 
         TermEvent::Key(Key::Ctrl('u')) => {
             app.input = String::from("");
