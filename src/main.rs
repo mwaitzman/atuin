@@ -31,5 +31,8 @@ impl Atuin {
 }
 
 fn main() -> Result<()> {
+	#[cfg(debug)] {
+		std::env::set_var("RUST_BACKTRACE", "full");
+	}
     Atuin::parse().run()
 }
