@@ -111,6 +111,7 @@ impl Cmd {
             let list_mode = ListMode::from_flags(self.human, self.cmd_only);
             if let Some(filter_mode) = self.filter_mode {
                 settings.filter_mode = filter_mode;
+            }
                 run_non_interactive(
                     &settings,
                     list_mode,
@@ -124,22 +125,6 @@ impl Cmd {
                     &self.query,
                     db,
                 )
-            }
-            else {
-                run_non_interactive(
-                    &settings,
-                    list_mode,
-                    self.cwd,
-                    self.exit,
-                    self.exclude_exit,
-                    self.exclude_cwd,
-                    self.before,
-                    self.after,
-                    self.limit,
-                    &self.query,
-                    db,
-                )
-            }
             .await?;
         };
         Ok(())
@@ -342,7 +327,7 @@ fn remove_char_from_input(app: &mut State, i: usize) -> char {
     c
 }
 
-#[inline(always)]
+#[inline]
 fn get_char_from_input(app: &mut State, i: usize) -> char {
     app.input.chars().nth(i - 1).unwrap()
 }
@@ -447,7 +432,7 @@ fn key_handler(input: &TermEvent, app: &mut State) -> Option<String> {
         }
 
         // The latter pattern matches pressing Alt and Backspace
-        TermEvent::Key(Key::Ctrl('w')) | TermEvent::Key(Key::Alt('\x7F'))=> {
+        TermEvent::Key(Key::Ctrl('w') | Key::Alt('\x7F'))=> {
             let mut stop_on_next_whitespace = false;
             loop {
                 if app.cursor_index == 0 {
